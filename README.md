@@ -4,6 +4,15 @@ A Swift-based tool for visualizing font metrics and bounds. This tool creates de
 
 ![Sample](/sample.png)
 
+**Note of the author**
+> All script fonts is ONLY for PERSONAL USE. NO COMMERCIAL USE ALLOWED!
+> You are requires a license for PROMOTIONAL or COMMERCIAL use.
+
+## Free Script Fonts Download Center
+[DaFont - Download fonts](https://www.dafont.com)
+[DaFont | Adelia Font Preview](https://www.dafont.com/adelia-3.font)
+[DaFont | Adelia Font Download](https://dl.dafont.com/dl/?f=adelia_3)
+
 ## Tools
 
 ### ScriptFontViewer.swift

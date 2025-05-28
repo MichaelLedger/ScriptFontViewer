@@ -5,8 +5,8 @@ A Swift-based tool for visualizing font metrics and bounds. This tool creates de
 ![Sample](/sample.png)
 
 ## Note of the author
-<code style="color : red">All script fonts is ONLY for PERSONAL USE. NO COMMERCIAL USE ALLOWED!</code>
-<code style="color : red">You are requires a license for PROMOTIONAL or COMMERCIAL use.</code>
+$${\color{red}All script fonts are ONLY for PERSONAL USE. NO COMMERCIAL USE ALLOWED!}$$
+$${\color{red}You are requires a license for PROMOTIONAL or COMMERCIAL use.}$$
 
 ## Free Script Fonts Download Center
 [DaFont - Download fonts](https://www.dafont.com)

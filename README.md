@@ -4,9 +4,9 @@ A Swift-based tool for visualizing font metrics and bounds. This tool creates de
 
 ![Sample](/sample.png)
 
-**Note of the author**
-> All script fonts is ONLY for PERSONAL USE. NO COMMERCIAL USE ALLOWED!
-> You are requires a license for PROMOTIONAL or COMMERCIAL use.
+## Note of the author
+<code style="color : red">All script fonts is ONLY for PERSONAL USE. NO COMMERCIAL USE ALLOWED!</code>
+<code style="color : red">You are requires a license for PROMOTIONAL or COMMERCIAL use.</code>
 
 ## Free Script Fonts Download Center
 [DaFont - Download fonts](https://www.dafont.com)
@@ -103,6 +103,8 @@ Examples:
 
 ### Frequently used samples
 ```bash
+./ScriptFontViewer.swift -u "https://github.com/MichaelLedger/ScriptFontViewer/raw/refs/heads/main/fonts/adelia.otf" -s 32 -t "Beautiful Writing" -k 4.0 -p
+
 ./ScriptFontViewer.swift -u "https://cdn.freeprintsapp.com/fonts/SebastianBobbyAltSlanted.ttf" -s 32 -t "Beautiful Writing" -p
 
 ./ScriptFontViewer.swift -u "https://cdn.freeprintsapp.com/fonts/SebastianBobbyAltSlanted.ttf" -s 48 -t "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789你" -p

@@ -393,13 +393,18 @@ class FontMetricsHandler {
         let infoFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: infoText, attributes: infoAttributes))
         
         let padding: CGFloat = 10
+        
+        var maxGlyphAscentExceed = 0.0
+        if let maxGlyphAscent = extremeGlyphs?.topMost.height, let fontMetricAscent = metrics["ascent"], maxGlyphAscent > fontMetricAscent {
+            maxGlyphAscentExceed = maxGlyphAscent - fontMetricAscent
+            print("Max glyph ascent exceeds font metric ascent by \(maxGlyphAscentExceed) points")
+        }
 
         var maxWidth = max(preciseBounds.width, standardBounds.width) // More padding
 
-        let labelMaxWidth: CGFloat = 50
+        let labelMaxWidth: CGFloat = 60
         let lineExtension: CGFloat = 0
-        let labelOffset: CGFloat = 10 // Increased offset for better visibility
-        let lineOriginX: CGFloat = labelOffset + labelMaxWidth + labelOffset
+        let lineOriginX: CGFloat = labelMaxWidth
         maxWidth += lineOriginX
 
         let pageWidth = maxWidth + (padding * 2)
@@ -442,7 +447,7 @@ class FontMetricsHandler {
         pdfContext.fill(CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight))
         
         // Define baseline y position for visualization (in PDF coordinates, bottom-up)
-        let baselineY = pageHeight - (metrics["ascent"] ?? 0) - padding
+        let baselineY = pageHeight - (preciseBounds.size.height + preciseBounds.origin.y) - padding//pageHeight - (metrics["ascent"] ?? 0) - padding
         
         // Draw the visualization components
         // ---- Draw the precise glyph bounds rectangle (blue) ----
@@ -521,12 +526,12 @@ class FontMetricsHandler {
         }
         
         // Draw labels with increased distance from the left edge
-        drawLabel("Baseline", at: CGPoint(x: padding - labelOffset, y: baselineY - 5))
-        drawLabel("Ascent", at: CGPoint(x: padding - labelOffset, y: ascentY - 5 + 2))
-        drawLabel("Descent", at: CGPoint(x: padding - labelOffset, y: descentY - 5 + 5))
-        drawLabel("Leading", at: CGPoint(x: padding - labelOffset, y: leadingY - 5))
-        drawLabel("Cap Height", at: CGPoint(x: padding - labelOffset, y: capHeightY - 5))
-        drawLabel("x-Height", at: CGPoint(x: padding - labelOffset, y: xHeightY - 5 + 2))
+        drawLabel("Baseline", at: CGPoint(x: padding, y: baselineY - 5))
+        drawLabel("Ascent", at: CGPoint(x: padding, y: ascentY - 5 + 2))
+        drawLabel("Descent", at: CGPoint(x: padding, y: descentY - 5 + 5))
+        drawLabel("Leading", at: CGPoint(x: padding, y: leadingY - 5))
+        drawLabel("CapHeight", at: CGPoint(x: padding, y: capHeightY - 5))
+        drawLabel("x-Height", at: CGPoint(x: padding, y: xHeightY - 5 + 2))
         
         // Draw a legend for the rectangles
         // drawLabel("Precise Glyph Bounds (blue)", at: CGPoint(x: padding, y: 100))

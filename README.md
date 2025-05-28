@@ -2,6 +2,8 @@
 
 A Swift-based tool for visualizing font metrics and bounds. This tool creates detailed PDF visualizations of font characteristics including precise glyph bounds, standard bounds, and various font metrics.
 
+![Sample](/Sebastian_Bobby_32.0pt_tracking0.0pt.pdf)
+
 ## Tools
 
 ### ScriptFontViewer.swift

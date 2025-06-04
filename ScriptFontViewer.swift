@@ -357,7 +357,7 @@ class FontMetricsHandler {
         print(String(format: "• Line Height: %.2f points", metrics["lineHeight"] ?? 0))
 
         // Create and position the info text first
-        let infoFont = CTFontCreateWithName("Helvetica" as CFString, 12, nil)
+        let infoFont = CTFontCreateWithName("Helvetica" as CFString, fontSize * 1.0 / 3, nil)
         let infoAttributes: [NSAttributedString.Key: Any] = [.font: infoFont]
         
         // Create informational text with extreme glyph information
@@ -402,7 +402,7 @@ class FontMetricsHandler {
 
         var maxWidth = max(preciseBounds.width, standardBounds.width) // More padding
 
-        let labelMaxWidth: CGFloat = 60
+        let labelMaxWidth: CGFloat = 30
         let lineExtension: CGFloat = 0
         let lineOriginX: CGFloat = labelMaxWidth
         maxWidth += lineOriginX
@@ -513,11 +513,12 @@ class FontMetricsHandler {
         pdfContext.drawPath(using: CGPathDrawingMode.stroke)
         
         // ---- Draw line labels ----
-        let labelFont = CTFontCreateWithName("Helvetica" as CFString, 8, nil)
+        let labelFontSize: CGFloat = 2
+        let labelFont = CTFontCreateWithName("Helvetica" as CFString, labelFontSize, nil)
         
         // Function to draw a label
-        func drawLabel(_ text: String, at point: CGPoint) {
-            let attributes: [NSAttributedString.Key: Any] = [.font: labelFont]
+        func drawLabel(_ text: String, at point: CGPoint, color: CGColor = CGColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)) {
+            let attributes: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: color]
             let string = NSAttributedString(string: text, attributes: attributes)
             let line = CTLineCreateWithAttributedString(string)
             
@@ -526,12 +527,16 @@ class FontMetricsHandler {
         }
         
         // Draw labels with increased distance from the left edge
-        drawLabel("Baseline", at: CGPoint(x: padding, y: baselineY - 5))
-        drawLabel("Ascent", at: CGPoint(x: padding, y: ascentY - 5 + 2))
-        drawLabel("Descent", at: CGPoint(x: padding, y: descentY - 5 + 5))
-        drawLabel("Leading", at: CGPoint(x: padding, y: leadingY - 5))
-        drawLabel("CapHeight", at: CGPoint(x: padding, y: capHeightY - 5))
-        drawLabel("x-Height", at: CGPoint(x: padding, y: xHeightY - 5 + 2))
+        drawLabel("Baseline____", at: CGPoint(x: padding, y: baselineY))
+        drawLabel("Ascent____", at: CGPoint(x: padding, y: ascentY))
+        drawLabel("CapHeight____", at: CGPoint(x: padding, y: capHeightY))
+        drawLabel("x-Height____", at: CGPoint(x: padding, y: xHeightY))
+        if descentY != leadingY {
+            drawLabel("Descent____", at: CGPoint(x: padding, y: descentY))
+            drawLabel("____Leading____", at: CGPoint(x: padding + 7, y: leadingY), color: CGColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 0.8))
+        } else {
+            drawLabel("Descent(Leading)____", at: CGPoint(x: padding, y: descentY))
+        }
         
         // Draw a legend for the rectangles
         // drawLabel("Precise Glyph Bounds (blue)", at: CGPoint(x: padding, y: 100))
@@ -580,7 +585,7 @@ class FontMetricsHandler {
         pdfContext.restoreGState()
         
         // Add a legend for the colored characters
-        let legendFont = CTFontCreateWithName("Helvetica" as CFString, 12, nil)
+        let legendFont = CTFontCreateWithName("Helvetica" as CFString, fontSize * 1.0 / 3, nil)
         let legendAttributes: [NSAttributedString.Key: Any] = [.font: legendFont]
         
         if let (topMost, bottomMost) = extremeGlyphs {

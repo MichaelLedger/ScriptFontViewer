@@ -2,7 +2,7 @@
 
 A Swift-based tool for visualizing font metrics and bounds. This tool creates detailed PDF visualizations of font characteristics including precise glyph bounds, standard bounds, and various font metrics.
 
-![Sample.png](/Sebastian_Bobby_32.0pt_tracking0.0pt.jpg)
+![preview](/preview.png)
 
 ## Note of the author
 $${\color{red}All \space script \space fonts \space are \space ONLY \space for \space PERSONAL \space USE. \space NO \space COMMERCIAL \space USE \space ALLOWED!}$$
@@ -103,6 +103,8 @@ Examples:
 
 ### Frequently used samples
 ```bash
+swift ScriptFontViewer.swift -f "Times New Roman" -s 10.0 -t 'We love you!' -k 1.6 -p 
+
 ./ScriptFontViewer.swift -u "https://github.com/MichaelLedger/ScriptFontViewer/raw/refs/heads/main/fonts/adelia.otf" -s 32 -t "Beautiful Writing" -k 4.0 -p
 
 ./ScriptFontViewer.swift -u "https://cdn.freeprintsapp.com/fonts/SebastianBobbyAltSlanted.ttf" -s 32 -t "Beautiful Writing" -p

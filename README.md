@@ -15,9 +15,7 @@ $${\color{red}You \space are \space requires \space a \space license \space for 
 
 ## [View and print fonts on your Mac in Font Book](https://support.apple.com/en-uz/guide/font-book/fntbk1001/mac)
 
-```html
 <p>You can select a font, then click the Info button <img src="https://help.apple.com/assets/65D69D493593D0EF840ADCFB/65D69D4A5BC27E542105EC4C/en_US/974db3c051f6ac0adaddf1e2fec1001e.png" alt="" height="30" width="30" originalimagename="SharedGlobalArt/IL_InfoCircle.png"> in the toolbar to see details about the font, such as language support, the manufacturer, and the location of the font file on your Mac.</p>
-```
 
 ## Tools
 

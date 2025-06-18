@@ -107,6 +107,8 @@ Examples:
 
 ### Frequently used samples
 ```bash
+./ScriptFontViewer.swift -f "PosterBodoni It BT" -s 24 -t "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789你" -p
+
 swift ScriptFontViewer.swift -f "Times New Roman" -s 10.0 -t 'We love you!' -k 1.6 -p 
 
 ./ScriptFontViewer.swift -u "https://github.com/MichaelLedger/ScriptFontViewer/raw/refs/heads/main/fonts/adelia.otf" -s 32 -t "Beautiful Writing" -k 4.0 -p

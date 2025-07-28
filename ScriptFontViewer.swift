@@ -12,7 +12,8 @@ func getAvailableFonts() -> [String] {
 
 // Helper function to find extreme glyphs
 func findExtremeGlyphs(fontName: String, fontSize: CGFloat, fontURL: URL?) -> (topMost: (character: Character, height: CGFloat), bottomMost: (character: Character, depth: CGFloat))? {
-    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:'\",.<>?/~`"
+    //let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:'\",.<>?/~`"
+    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
     
     var highestAscender: CGFloat = 0
@@ -211,7 +212,7 @@ class FontMetricsHandler {
             
             // If we have characters to add, append them with a separator
             if !charsToAdd.isEmpty {
-                let separator = " | "
+                let separator = " - "
                 self.text = text + separator + String(charsToAdd)
             }
         }

@@ -287,6 +287,13 @@ node index.js --font ./fonts/MyScript.ttf --size 48 --text "Sample Text"
 node index.js --font ./fonts/MyScript.ttf --size 32 --text "Spaced Out" --tracking 2 --output preview.pdf
 ```
 
+### Examples usually used
+```
+node index.js --font ./fonts/SofiaProSoft-Regular.ttf --size 32 --text "Spaced Out" --tracking 2 --output preview-magic.pdf
+
+./ScriptFontViewer.swift -f "Sofia Pro Soft" -s 32 -t "Spaced Out" -k 2 -p -o preview-swift.pdf
+```
+
 ### Implementation Notes
 - Uses node-canvas for font measurements
 - ImageMagick for PDF generation

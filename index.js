@@ -42,7 +42,7 @@ const argv = yargs(hideBin(process.argv))
 // Function to create PDF visualization
 function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) {
   // Find extreme glyphs
-  const extremeGlyphs = findExtremeGlyphs(fontPath, fontSize);
+  const extremeGlyphs = findExtremeGlyphs(fontPath, fontSize, text);
   
   // Create temporary canvas for measurements with size proportional to font size
   const canvasWidth = Math.max(2000, fontSize * 20); // Ensure enough width for measurements
@@ -56,19 +56,26 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
   console.log(`fontPath:${fontPath}\nfontFamily:${fontFamily}\nfontSize:${fontSize}px\ntracking:${tracking}`)
   ctx.font = `${fontSize}px "${fontFamily}"`;
 
-  const dpi = 1;
+  const dpi = 60;//清晰度
+  const density = 300;
+  const pixelsPerInch = 50;
+  let metricsScale = dpi * 0.6; //0.6 is magic number for now.
+  console.log(`metricsScale:${metricsScale}`);
+  let pointSize = fontSize / pixelsPerInch;
+  console.log(`pointSize: ${pointSize}`);
+  let scaledPointSize = pointSize*pixelsPerInch/4;//pointSize*metricsScale;
+  console.log(`scaledPointSize: ${scaledPointSize}`);
   
   // Get text metrics for each character to find true bounds
   let totalWidth = 0;
   let maxAscent = 0;
   let maxDescent = 0;
-  
+
   // First pass: measure each character
   console.log('\nCharacter Metrics:');
   console.log('Char | Raw Ascent | Raw Descent | Scaled Ascent | Scaled Descent | Width');
   console.log('-'.repeat(80));
   
-  let metricsScale = fontSize / 8;// Assuming metrics are in a 10pt
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     const metrics = ctx.measureText(char);
@@ -97,10 +104,10 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
   totalWidth = Math.max(totalWidth, fontSize * 4)
   
   // Calculate dimensions for the PDF
-  const leading = fontSize;
+  const leading = fontSize * 4;
   const topPadding = fontSize / 4.0;
-  const padding = 10;
-  const infoHeight = fontSize * 3 + padding * 2;
+  const padding = fontSize;
+  const infoHeight = pointSize * dpi * pixelsPerInch / 2;
   const width = Math.ceil(totalWidth + padding * 2 + leading);
   
   // Calculate height based on actual text metrics plus info section
@@ -109,12 +116,12 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
   
   // Position text near top of page with just enough space for ascenders
   const baselineY = maxAscent + topPadding;
-  
+
   // Generate PDF using ImageMagick
   const commands = [
     // Set high resolution and quality
-    '-density', `${dpi*100}`,
-    '-quality', '100',
+    '-density', `${dpi*pixelsPerInch}`,
+    // '-quality', '100',
     
     // Create base canvas with white background
     '-size', `${width}x${height}`,
@@ -127,8 +134,8 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
     
     // Draw text
     '-font', fontPath,
-    '-pointsize', `${fontSize/dpi}`,
-    '-fill', 'black',
+    '-pointsize', `${scaledPointSize}`,
+    '-fill', 'blue',
     '-stroke', 'none',
     '-kerning', tracking.toString(),
     '-annotate', `+${padding+leading}+${baselineY}`, text,
@@ -148,7 +155,7 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
     '-kerning', '0',
     
     // Add metrics text at the bottom
-    '-pointsize', `${fontSize/8.0/dpi}`,
+    '-pointsize', `${pointSize/4.0}`,
     '-fill', 'black',
     '-stroke', 'none',
     '-gravity', 'NorthWest',
@@ -157,23 +164,23 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
     `Text: "${text}"\n` +
     `Tracking: ${tracking}pt\n\n` +
     `Extreme Characters:\n` +
-    `• Top-most glyph: '${extremeGlyphs.topMost.character}'\nextends ${maxAscent.toFixed(2)} points above baseline\n` +
-    `• Bottom-most glyph: '${extremeGlyphs.bottomMost.character}'\nextends ${maxDescent.toFixed(2)} points below baseline\n\n` +
+    `• Top-most glyph: '${extremeGlyphs.topMost.character}'\nextends ${maxAscent/metricsScale.toFixed(2)} points above baseline\n` +
+    `• Bottom-most glyph: '${extremeGlyphs.bottomMost.character}'\nextends ${maxDescent/metricsScale.toFixed(2)} points below baseline\n\n` +
     `Metrics:\n` +
-    `• Ascent: ${maxAscent.toFixed(2)} points\n` +
-    `• Descent: ${maxDescent.toFixed(2)} points\n` +
-    `• Total height: ${(maxAscent + maxDescent).toFixed(2)} points`,
+    `• Ascent: ${maxAscent/metricsScale.toFixed(2)} points\n` +
+    `• Descent: ${maxDescent/metricsScale.toFixed(2)} points\n` +
+    `• Total height: ${((maxAscent + maxDescent)/metricsScale).toFixed(2)} points`,
     
     // Add labels for lines
-    '-pointsize', `${fontSize/8.0/dpi}`,
-    '-fill', 'green',
-    '-annotate', `+${padding}+${baselineY-maxAscent-8}`, 'ascent',
-    '-annotate', `+${padding}+${baselineY-8}`, 'baseline',
-    '-annotate', `+${padding}+${baselineY+maxDescent-8}`, 'descent',
+    '-pointsize', `${pointSize/8.0}`,
+    '-fill', 'blue',
+    '-annotate', `+${padding}+${baselineY-maxAscent}`, 'ascent',
+    '-annotate', `+${padding}+${baselineY}`, 'baseline',
+    '-annotate', `+${padding}+${baselineY+maxDescent}`, 'descent',
     
     // Save as PDF with high resolution
     '-units', 'PixelsPerInch',
-    '-density', `${dpi*100}`,
+    '-density', `${pixelsPerInch}`,
     outputPath
   ];
 
@@ -186,7 +193,7 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
 }
 
 // Function to find extreme glyphs (highest ascender and lowest descender)
-function findExtremeGlyphs(fontPath, fontSize) {
+function findExtremeGlyphs(fontPath, fontSize, entryTxt) {
   // Create canvas with size proportional to font size
   const canvasWidth = Math.max(2000, fontSize * 20);
   const canvasHeight = Math.max(2000, fontSize * 10);
@@ -198,7 +205,10 @@ function findExtremeGlyphs(fontPath, fontSize) {
   registerFont(fontPath, { family: fontFamily });
   ctx.font = `${fontSize}px "${fontFamily}"`;
   
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let chars = entryTxt;
+  if (entryTxt.length == 0) {
+    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  }
   let highestAscender = 0;
   let topChar = '';
   let lowestDescender = 0;

@@ -246,3 +246,55 @@ The tool measures and displays:
 - The tools are particularly useful for script fonts where standard bounds might not accurately represent the visual appearance
 - Precise glyph bounds can reveal overhanging parts that might be clipped in standard layout
 - The visualization helps understand how the font metrics relate to the actual rendered glyphs 
+
+## JavaScript Implementation by ImageMagick
+
+An alternative implementation using Node.js and ImageMagick is also available, providing similar functionality in a cross-platform manner.
+
+### Prerequisites
+- Node.js 14+ installed
+- ImageMagick installed on your system
+  - Mac: `brew install imagemagick`
+  - Linux: `sudo apt-get install imagemagick`
+  - Windows: Download from [ImageMagick website](https://imagemagick.org/script/download.php)
+
+### Installation
+```bash
+npm install
+```
+
+### Usage
+```bash
+node index.js --font <font-path> [options]
+
+Options:
+  -f, --font         Path to the font file (OTF/TTF)
+  -s, --size         Font size in points (default: 24)
+  -t, --text         Text to render (default: "Hello World")
+  -k, --tracking     Tracking value in points (default: 0)
+  -o, --output       Output PDF path (default: fontname_size_tracking.pdf)
+```
+
+### Examples
+```bash
+# Basic usage
+node index.js --font ./fonts/MyScript.ttf
+
+# Custom text and size
+node index.js --font ./fonts/MyScript.ttf --size 48 --text "Sample Text"
+
+# With tracking and custom output
+node index.js --font ./fonts/MyScript.ttf --size 32 --text "Spaced Out" --tracking 2 --output preview.pdf
+```
+
+### Implementation Notes
+- Uses node-canvas for font measurements
+- ImageMagick for PDF generation
+- Local font files only (no remote font loading)
+- Cross-platform compatible
+- Provides similar metrics visualization to the Swift version
+ 
+### Reference
+[imagemagick - text](https://imagemagick.org/Usage/text/)
+[imagemagick - command-line-options](https://imagemagick.org/script/command-line-options.php?#font)
+[imagemagick - draw](https://usage.imagemagick.org/draw/)

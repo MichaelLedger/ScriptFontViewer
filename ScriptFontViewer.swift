@@ -11,9 +11,9 @@ func getAvailableFonts() -> [String] {
 }
 
 // Helper function to find extreme glyphs
-func findExtremeGlyphs(fontName: String, fontSize: CGFloat, fontURL: URL?) -> (topMost: (character: Character, height: CGFloat), bottomMost: (character: Character, depth: CGFloat))? {
+func findExtremeGlyphs(fontName: String, fontSize: CGFloat, fontURL: URL?, chars: String? = nil) -> (topMost: (character: Character, height: CGFloat), bottomMost: (character: Character, depth: CGFloat))? {
     //let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:'\",.<>?/~`"
-    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    let detectChars = chars ?? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
     
     var highestAscender: CGFloat = 0
@@ -21,7 +21,7 @@ func findExtremeGlyphs(fontName: String, fontSize: CGFloat, fontURL: URL?) -> (t
     var lowestDescender: CGFloat = 0
     var bottomChar: Character = " "
     
-    for char in chars {
+    for char in detectChars {
         let attributes: [NSAttributedString.Key: Any] = [
             NSAttributedString.Key.font: font
         ]
@@ -53,7 +53,7 @@ class FontMetricsHandler {
     private(set) var text: String
     let tracking: CGFloat
     let fontURL: URL?
-    private var extremeGlyphs: (topMost: (character: Character, height: CGFloat), bottomMost: (character: Character, depth: CGFloat))?
+    public var extremeGlyphs: (topMost: (character: Character, height: CGFloat), bottomMost: (character: Character, depth: CGFloat))?
     
     init(fontName: String, fontSize: CGFloat, text: String, tracking: CGFloat = 0.0, fontURL: URL? = nil) {
         self.fontName = fontName
@@ -358,7 +358,8 @@ class FontMetricsHandler {
         print(String(format: "• Line Height: %.2f points", metrics["lineHeight"] ?? 0))
 
         // Create and position the info text first
-        let infoFont = CTFontCreateWithName("Helvetica" as CFString, fontSize * 1.0 / 3, nil)
+        let remarkFontSize  = fontSize / 2.0 < 2 ? 2 : fontSize / 2.0
+        let infoFont = CTFontCreateWithName("Helvetica" as CFString, remarkFontSize, nil)
         let infoAttributes: [NSAttributedString.Key: Any] = [.font: infoFont]
         
         // Create informational text with extreme glyph information
@@ -393,8 +394,10 @@ class FontMetricsHandler {
         
         let infoFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: infoText, attributes: infoAttributes))
         
-        let padding: CGFloat = 10
-        
+        var padding: CGFloat = fontSize / 4.0 > 10 ? 10 : fontSize / 4.0
+        if padding < 2 {
+            padding = 2
+        }
         var maxGlyphAscentExceed = 0.0
         if let maxGlyphAscent = extremeGlyphs?.topMost.height, let fontMetricAscent = metrics["ascent"], maxGlyphAscent > fontMetricAscent {
             maxGlyphAscentExceed = maxGlyphAscent - fontMetricAscent
@@ -403,9 +406,22 @@ class FontMetricsHandler {
 
         var maxWidth = max(preciseBounds.width, standardBounds.width) // More padding
 
-        let labelMaxWidth: CGFloat = 30
+        let debugLineFontSize: CGFloat = fontSize / 4.0 < 2 ? 2 : fontSize / 4.0
+        let debugLineFont = CTFontCreateWithName("Helvetica" as CFString, debugLineFontSize, nil)
+        let debugLineAttributes: [NSAttributedString.Key: Any] = [.font: debugLineFont]
+        let maxDebugLineText = "                    cap-height____"
+        let debugLineFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: maxDebugLineText, attributes: debugLineAttributes))
+        let debugLineSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            debugLineFramesetter,
+            CFRange(location: 0, length: maxDebugLineText.count),
+            nil,
+            CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+            nil
+        )
+        
+        let labelMaxWidth: CGFloat = debugLineSize.width
         let lineExtension: CGFloat = 0
-        let lineOriginX: CGFloat = labelMaxWidth
+        let lineOriginX: CGFloat = padding + labelMaxWidth
         maxWidth += lineOriginX
 
         let pageWidth = maxWidth + (padding * 2)
@@ -422,14 +438,15 @@ class FontMetricsHandler {
         print("suggestedInfoSize:\(suggestedInfoSize)")
 
         // legend text with colored squares frame
-        let legendInfoHeight: CGFloat = 40
+        //let legendInfoHeight: CGFloat = 40
 
         // Find the maximum bounds to use for the visualization
         var maxHeight = max(preciseBounds.height, standardBounds.height, metrics["lineHeight"] ?? 0)
-        maxHeight += padding + suggestedInfoSize.height + legendInfoHeight
+        maxHeight += padding + suggestedInfoSize.height // + legendInfoHeight
 
         // Add padding around the text for better visibility
-        let pageHeight = maxHeight + (padding * 2) // Reduced vertical space
+        let topMargin: CGFloat = fontSize / 4.0
+        let pageHeight = maxHeight + topMargin + padding * 2 + padding // Reduced vertical space
         
         // Create a PDF context
         let pdfData = NSMutableData()
@@ -448,7 +465,7 @@ class FontMetricsHandler {
         pdfContext.fill(CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight))
         
         // Define baseline y position for visualization (in PDF coordinates, bottom-up)
-        let baselineY = pageHeight - (preciseBounds.size.height + preciseBounds.origin.y) - padding//pageHeight - (metrics["ascent"] ?? 0) - padding
+        let baselineY = pageHeight - (preciseBounds.size.height + preciseBounds.origin.y) - padding * 2 - topMargin//pageHeight - (metrics["ascent"] ?? 0) - padding
         
         // Draw the visualization components
         // ---- Draw the precise glyph bounds rectangle (blue) ----
@@ -514,12 +531,9 @@ class FontMetricsHandler {
         pdfContext.drawPath(using: CGPathDrawingMode.stroke)
         
         // ---- Draw line labels ----
-        let labelFontSize: CGFloat = 2
-        let labelFont = CTFontCreateWithName("Helvetica" as CFString, labelFontSize, nil)
-        
         // Function to draw a label
         func drawLabel(_ text: String, at point: CGPoint, color: CGColor = CGColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)) {
-            let attributes: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: color]
+            let attributes: [NSAttributedString.Key: Any] = [.font: debugLineFont, .foregroundColor: color]
             let string = NSAttributedString(string: text, attributes: attributes)
             let line = CTLineCreateWithAttributedString(string)
             
@@ -528,15 +542,15 @@ class FontMetricsHandler {
         }
         
         // Draw labels with increased distance from the left edge
-        drawLabel("Baseline____", at: CGPoint(x: padding, y: baselineY))
-        drawLabel("Ascent____", at: CGPoint(x: padding, y: ascentY))
-        drawLabel("CapHeight____", at: CGPoint(x: padding, y: capHeightY))
-        drawLabel("x-Height____", at: CGPoint(x: padding, y: xHeightY))
+        drawLabel("baseline____", at: CGPoint(x: padding, y: baselineY))
+        drawLabel("ascent____", at: CGPoint(x: padding, y: ascentY))
+        drawLabel("                    cap-height____", at: CGPoint(x: padding, y: capHeightY))
+        drawLabel("x-height____", at: CGPoint(x: padding, y: xHeightY))
         if descentY != leadingY {
-            drawLabel("Descent____", at: CGPoint(x: padding, y: descentY))
-            drawLabel("____Leading____", at: CGPoint(x: padding + 7, y: leadingY), color: CGColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 0.8))
+            drawLabel("descent____", at: CGPoint(x: padding, y: descentY))
+            drawLabel("                   leading____", at: CGPoint(x: padding + 7, y: leadingY), color: CGColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 0.8))
         } else {
-            drawLabel("Descent(Leading)____", at: CGPoint(x: padding, y: descentY))
+            drawLabel("descent(leading)____", at: CGPoint(x: padding, y: descentY))
         }
         
         // Draw a legend for the rectangles
@@ -586,7 +600,8 @@ class FontMetricsHandler {
         pdfContext.restoreGState()
         
         // Add a legend for the colored characters
-        let legendFont = CTFontCreateWithName("Helvetica" as CFString, fontSize * 1.0 / 3, nil)
+        /*
+        let legendFont = CTFontCreateWithName("Helvetica" as CFString, remarkFontSize, nil)
         let legendAttributes: [NSAttributedString.Key: Any] = [.font: legendFont]
         
         if let (topMost, bottomMost) = extremeGlyphs {
@@ -607,6 +622,7 @@ class FontMetricsHandler {
             pdfContext.textPosition = CGPoint(x: padding + 12, y: suggestedInfoSize.height + 35)
             CTLineDraw(bottomLine, pdfContext)
         }
+         */
         
         // ---- Draw origin point ----
         pdfContext.setStrokeColor(CGColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0))
@@ -782,7 +798,8 @@ if !handler.isFontRegistered() {
     }
 }
 
-handler.autoAppendExtremeCharacters()
+//handler.autoAppendExtremeCharacters()
+handler.extremeGlyphs = findExtremeGlyphs(fontName: fontName, fontSize: fontSize, fontURL: fontURL, chars: text)
 
 // Generate output path if not specified
 if generatePDF && outputPath.isEmpty {

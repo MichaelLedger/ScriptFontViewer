@@ -59,7 +59,7 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
   const dpi = 60;//清晰度
   const density = 300;
   const pixelsPerInch = 50;
-  let metricsScale = dpi * 0.6; //0.6 is magic number for now.
+  let metricsScale = dpi; //0.6 is magic number for now.
   console.log(`metricsScale:${metricsScale}`);
   let pointSize = fontSize / pixelsPerInch;
   console.log(`pointSize: ${pointSize}`);
@@ -135,10 +135,13 @@ function createPDFVisualization(fontPath, fontSize, text, tracking, outputPath) 
     // Draw text
     '-font', fontPath,
     '-pointsize', `${scaledPointSize}`,
-    '-fill', 'blue',
+    '-fill', 'green',
     '-stroke', 'none',
     '-kerning', tracking.toString(),
-    '-annotate', `+${padding+leading}+${baselineY}`, text,
+    //'-annotate', `+${padding+leading}+${baselineY}`, text,
+    //'-draw', `rotate 45 text ${padding+leading},${baselineY} '${text}'`,
+    '-draw', `text ${padding+leading},${baselineY} '${text}'`,
+    '-debug', 'annotate',
     
     // Draw metrics lines
     '-stroke', 'blue',

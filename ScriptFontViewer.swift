@@ -318,6 +318,332 @@ class FontMetricsHandler {
     }
     
     // Create a PDF visualization
+    func createPNGVisualization(outputPath: String, scale: CGFloat = 2.0) -> Bool {
+        // Create an NSImage with the specified scale
+        let pageWidth = calculatePageWidth()
+        let pageHeight = calculatePageHeight()
+        
+        let image = NSImage(size: NSSize(width: pageWidth, height: pageHeight))
+        image.lockFocus()
+        
+        // Get the current graphics context
+        guard let context = NSGraphicsContext.current?.cgContext else {
+            print("Failed to get graphics context")
+            image.unlockFocus()
+            return false
+        }
+        
+        // Draw the visualization
+        drawVisualization(in: context, pageWidth: pageWidth, pageHeight: pageHeight)
+        
+        // End drawing
+        image.unlockFocus()
+        
+        // Convert to PNG data with specified scale
+        guard let tiffData = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData) else {
+            print("Failed to create bitmap representation")
+            return false
+        }
+        
+        // Set the scale factor for Retina displays
+        bitmap.size = NSSize(width: pageWidth / scale, height: pageHeight / scale)
+        
+        // Convert to PNG data
+        guard let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            print("Failed to create PNG data")
+            return false
+        }
+        
+        // Write to file
+        do {
+            try pngData.write(to: URL(fileURLWithPath: outputPath))
+            print("PNG created successfully at: \(outputPath)")
+            return true
+        } catch {
+            print("Failed to write PNG: \(error)")
+            return false
+        }
+    }
+    
+    // Helper function to calculate page width
+    private func calculatePageWidth() -> CGFloat {
+        let standardBounds = getStandardBounds()
+        let preciseBounds = getPreciseGlyphBounds()
+        let padding: CGFloat = fontSize / 4.0 > 10 ? 10 : fontSize / 4.0
+        let debugLineFontSize: CGFloat = fontSize / 4.0 < 2 ? 2 : fontSize / 4.0
+        let debugLineFont = CTFontCreateWithName("Helvetica" as CFString, debugLineFontSize, nil)
+        let debugLineAttributes: [NSAttributedString.Key: Any] = [.font: debugLineFont]
+        let maxDebugLineText = "                    cap-height____"
+        let debugLineFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: maxDebugLineText, attributes: debugLineAttributes))
+        let debugLineSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            debugLineFramesetter,
+            CFRange(location: 0, length: maxDebugLineText.count),
+            nil,
+            CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+            nil
+        )
+        
+        let labelMaxWidth: CGFloat = debugLineSize.width
+        let maxWidth = max(preciseBounds.width, standardBounds.width) + padding + labelMaxWidth
+        return maxWidth + (padding * 2)
+    }
+    
+    // Helper function to calculate page height
+    private func calculatePageHeight() -> CGFloat {
+        let standardBounds = getStandardBounds()
+        let preciseBounds = getPreciseGlyphBounds()
+        let metrics = getFontMetrics()
+        let padding: CGFloat = fontSize / 4.0 > 10 ? 10 : fontSize / 4.0
+        let remarkFontSize = fontSize / 2.0 < 2 ? 2 : fontSize / 2.0
+        let infoFont = CTFontCreateWithName("Helvetica" as CFString, remarkFontSize, nil)
+        let infoAttributes: [NSAttributedString.Key: Any] = [.font: infoFont]
+        
+        // Create informational text
+        let infoText = createInfoText()
+        
+        let infoFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: infoText, attributes: infoAttributes))
+        let suggestedInfoSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            infoFramesetter,
+            CFRange(location: 0, length: infoText.count),
+            nil,
+            CGSize(width: calculatePageWidth() - (padding * 2), height: CGFloat.greatestFiniteMagnitude),
+            nil
+        )
+        
+        var maxHeight = max(preciseBounds.height, standardBounds.height, metrics["lineHeight"] ?? 0)
+        maxHeight += padding + suggestedInfoSize.height
+        
+        let topMargin: CGFloat = fontSize / 4.0
+        return maxHeight + topMargin + padding * 2 + padding
+    }
+    
+    // Helper function to create info text
+    private func createInfoText() -> String {
+        let standardBounds = getStandardBounds()
+        let preciseBounds = getPreciseGlyphBounds()
+        let metrics = getFontMetrics()
+        
+        return """
+        Font: \(fontName) at \(fontSize)pt
+        Text: "\(text)"
+        Tracking: \(String(format: "%.2f", tracking)) points
+        
+        Extreme Characters:
+        Top-most glyph: '\(extremeGlyphs?.topMost.character ?? " ")' extends \(String(format: "%.2f", extremeGlyphs?.topMost.height ?? 0)) points above baseline
+        Bottom-most glyph: '\(extremeGlyphs?.bottomMost.character ?? " ")' extends \(String(format: "%.2f", extremeGlyphs?.bottomMost.depth ?? 0)) points below baseline
+        
+        Precise Glyph Bounds (blue)
+        Standard Bounds (green)
+        
+        Precise Glyph Bounds:
+          Origin: (\(String(format: "%.2f", preciseBounds.origin.x)), \(String(format: "%.2f", preciseBounds.origin.y)))
+          Size: \(String(format: "%.2f", preciseBounds.width)) × \(String(format: "%.2f", preciseBounds.height)) points
+        
+        Standard Bounds (CTFramesetterCreateFrame):
+          Origin: (\(String(format: "%.2f", standardBounds.origin.x)), \(String(format: "%.2f", standardBounds.origin.y)))
+          Size: \(String(format: "%.2f", standardBounds.width)) × \(String(format: "%.2f", standardBounds.height)) points
+        
+        Font Metrics:
+          Ascent: \(String(format: "%.2f", metrics["ascent"] ?? 0)) points
+          Descent: \(String(format: "%.2f", metrics["descent"] ?? 0)) points
+          Leading: \(String(format: "%.2f", metrics["leading"] ?? 0)) points
+          Cap Height: \(String(format: "%.2f", metrics["capHeight"] ?? 0)) points
+          x-Height: \(String(format: "%.2f", metrics["xHeight"] ?? 0)) points
+          Line Height: \(String(format: "%.2f", metrics["lineHeight"] ?? 0)) points
+        """
+    }
+    
+    // Helper function to draw the visualization
+    private func drawVisualization(in context: CGContext, pageWidth: CGFloat, pageHeight: CGFloat) {
+        let standardBounds = getStandardBounds()
+        let preciseBounds = getPreciseGlyphBounds()
+        let metrics = getFontMetrics()
+        let padding: CGFloat = fontSize / 4.0 > 10 ? 10 : fontSize / 4.0
+        
+        // Draw a light gray background
+        context.setFillColor(CGColor(gray: 0.95, alpha: 1.0))
+        context.fill(CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight))
+        
+        // Calculate positions
+        let debugLineFontSize: CGFloat = fontSize / 4.0 < 2 ? 2 : fontSize / 4.0
+        let debugLineFont = CTFontCreateWithName("Helvetica" as CFString, debugLineFontSize, nil)
+        let maxDebugLineText = "                    cap-height____"
+        let debugLineAttributes: [NSAttributedString.Key: Any] = [.font: debugLineFont]
+        let debugLineFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: maxDebugLineText, attributes: debugLineAttributes))
+        let debugLineSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            debugLineFramesetter,
+            CFRange(location: 0, length: maxDebugLineText.count),
+            nil,
+            CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+            nil
+        )
+        
+        let labelMaxWidth: CGFloat = debugLineSize.width
+        let lineExtension: CGFloat = 0
+        let lineOriginX: CGFloat = padding + labelMaxWidth
+        
+        // Define baseline y position
+        let topMargin: CGFloat = fontSize / 4.0
+        let baselineY = pageHeight - (preciseBounds.size.height + preciseBounds.origin.y) - padding * 2 - topMargin
+        
+        // Draw precise glyph bounds (blue)
+        context.setFillColor(CGColor(red: 0.9, green: 0.9, blue: 1.0, alpha: 0.3))
+        context.setStrokeColor(CGColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 0.8))
+        context.setLineWidth(0.5)
+        
+        let preciseRect = CGRect(
+            x: lineOriginX + preciseBounds.origin.x,
+            y: baselineY + preciseBounds.origin.y,
+            width: preciseBounds.width,
+            height: preciseBounds.height
+        )
+        context.addRect(preciseRect)
+        context.drawPath(using: .fillStroke)
+        
+        // Draw standard bounds (green)
+        context.setFillColor(CGColor(red: 0.9, green: 1.0, blue: 0.9, alpha: 0.3))
+        context.setStrokeColor(CGColor(red: 0.0, green: 0.8, blue: 0.0, alpha: 0.8))
+        
+        let standardRect = CGRect(
+            x: lineOriginX,
+            y: baselineY + metrics["ascent"]! - standardBounds.height,
+            width: standardBounds.width,
+            height: standardBounds.height
+        )
+        context.addRect(standardRect)
+        context.drawPath(using: .fillStroke)
+        
+        // Draw metrics lines
+        drawMetricsLines(in: context, baselineY: baselineY, lineOriginX: lineOriginX, maxWidth: pageWidth, lineExtension: lineExtension)
+        
+        // Draw line labels
+        drawLineLabels(in: context, baselineY: baselineY, padding: padding)
+        
+        // Draw the text
+        drawText(in: context, at: CGPoint(x: lineOriginX, y: baselineY))
+        
+        // Draw info text
+        drawInfoText(in: context, pageWidth: pageWidth, padding: padding)
+    }
+    
+    // Helper function to draw metrics lines
+    private func drawMetricsLines(in context: CGContext, baselineY: CGFloat, lineOriginX: CGFloat, maxWidth: CGFloat, lineExtension: CGFloat) {
+        let metrics = getFontMetrics()
+        
+        context.setStrokeColor(CGColor(red: 0.7, green: 0.7, blue: 0.7, alpha: 0.8))
+        context.setLineWidth(0.5)
+        
+        // Draw baseline
+        context.move(to: CGPoint(x: lineOriginX - lineExtension, y: baselineY))
+        context.addLine(to: CGPoint(x: lineOriginX + maxWidth + lineExtension, y: baselineY))
+        
+        // Draw other metric lines
+        let metricLines = [
+            ("ascent", metrics["ascent"]!),
+            ("descent", -metrics["descent"]!),
+            ("leading", -(metrics["descent"]! + metrics["leading"]!)),
+            ("capHeight", metrics["capHeight"]!),
+            ("xHeight", metrics["xHeight"]!)
+        ]
+        
+        for (_, offset) in metricLines {
+            let y = baselineY + offset
+            context.move(to: CGPoint(x: lineOriginX - lineExtension, y: y))
+            context.addLine(to: CGPoint(x: lineOriginX + maxWidth + lineExtension, y: y))
+        }
+        
+        context.drawPath(using: .stroke)
+    }
+    
+    // Helper function to draw line labels
+    private func drawLineLabels(in context: CGContext, baselineY: CGFloat, padding: CGFloat) {
+        let metrics = getFontMetrics()
+        let debugLineFontSize: CGFloat = fontSize / 4.0 < 2 ? 2 : fontSize / 4.0
+        let debugLineFont = CTFontCreateWithName("Helvetica" as CFString, debugLineFontSize, nil)
+        
+        func drawLabel(_ text: String, at point: CGPoint, color: CGColor = CGColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)) {
+            let attributes: [NSAttributedString.Key: Any] = [.font: debugLineFont, .foregroundColor: color]
+            let string = NSAttributedString(string: text, attributes: attributes)
+            let line = CTLineCreateWithAttributedString(string)
+            
+            context.textPosition = point
+            CTLineDraw(line, context)
+        }
+        
+        // Draw labels
+        drawLabel("baseline____", at: CGPoint(x: padding, y: baselineY))
+        drawLabel("ascent____", at: CGPoint(x: padding, y: baselineY + metrics["ascent"]!))
+        drawLabel("                    cap-height____", at: CGPoint(x: padding, y: baselineY + metrics["capHeight"]!))
+        drawLabel("x-height____", at: CGPoint(x: padding, y: baselineY + metrics["xHeight"]!))
+        
+        let descentY = baselineY - metrics["descent"]!
+        let leadingY = baselineY - (metrics["descent"]! + metrics["leading"]!)
+        
+        if descentY != leadingY {
+            drawLabel("descent____", at: CGPoint(x: padding, y: descentY))
+            drawLabel("                   leading____", at: CGPoint(x: padding + 7, y: leadingY),
+                     color: CGColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 0.8))
+        } else {
+            drawLabel("descent(leading)____", at: CGPoint(x: padding, y: descentY))
+        }
+    }
+    
+    // Helper function to draw the sample text
+    private func drawText(in context: CGContext, at position: CGPoint) {
+        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
+        let attributedString = NSMutableAttributedString(string: text)
+        
+        let baseAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .tracking: tracking
+        ]
+        attributedString.addAttributes(baseAttributes, range: NSRange(location: 0, length: text.count))
+        
+        // Highlight extreme characters
+        if let (topMost, bottomMost) = extremeGlyphs {
+            if let topRange = text.range(of: String(topMost.character)) {
+                let nsRange = NSRange(topRange, in: text)
+                attributedString.addAttribute(.foregroundColor,
+                                           value: CGColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0),
+                                           range: nsRange)
+            }
+            
+            if let bottomRange = text.range(of: String(bottomMost.character)) {
+                let nsRange = NSRange(bottomRange, in: text)
+                attributedString.addAttribute(.foregroundColor,
+                                           value: CGColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0),
+                                           range: nsRange)
+            }
+        }
+        
+        let line = CTLineCreateWithAttributedString(attributedString)
+        context.textPosition = position
+        CTLineDraw(line, context)
+    }
+    
+    // Helper function to draw info text
+    private func drawInfoText(in context: CGContext, pageWidth: CGFloat, padding: CGFloat) {
+        let remarkFontSize = fontSize / 2.0 < 2 ? 2 : fontSize / 2.0
+        let infoFont = CTFontCreateWithName("Helvetica" as CFString, remarkFontSize, nil)
+        let infoAttributes: [NSAttributedString.Key: Any] = [.font: infoFont]
+        let infoText = createInfoText()
+        
+        let infoFramesetter = CTFramesetterCreateWithAttributedString(NSAttributedString(string: infoText, attributes: infoAttributes))
+        let suggestedInfoSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            infoFramesetter,
+            CFRange(location: 0, length: infoText.count),
+            nil,
+            CGSize(width: pageWidth - (padding * 2), height: CGFloat.greatestFiniteMagnitude),
+            nil
+        )
+        
+        let infoPath = CGPath(rect: CGRect(x: padding, y: padding, width: pageWidth - (padding * 2), height: suggestedInfoSize.height),
+                             transform: nil)
+        let infoFrame = CTFramesetterCreateFrame(infoFramesetter, CFRange(location: 0, length: infoText.count), infoPath, nil)
+        CTFrameDraw(infoFrame, context)
+    }
+    
     func createPDFVisualization(outputPath: String) -> Bool {
         // Check if font is registered
         guard isFontRegistered() else {
@@ -671,8 +997,10 @@ var text = "Hello World"
 var tracking: CGFloat = 0.0
 var listFonts = false
 var generatePDF = false
+var generatePNG = false
 var outputPath = ""
 var fontURL: URL? = nil
+var pngScale: CGFloat = 2.0
 
 // Process command-line arguments
 var argIndex = 1
@@ -733,6 +1061,18 @@ while argIndex < CommandLine.arguments.count {
     case "--pdf", "-p":
         generatePDF = true
         argIndex += 1
+    case "--png":
+        generatePNG = true
+        argIndex += 1
+    case "--scale":
+        if argIndex + 1 < CommandLine.arguments.count,
+           let scale = Double(CommandLine.arguments[argIndex + 1]) {
+            pngScale = CGFloat(scale)
+            argIndex += 2
+        } else {
+            print("Error: Missing or invalid scale value after \(arg)")
+            exit(1)
+        }
     case "--output", "-o":
         if argIndex + 1 < CommandLine.arguments.count {
             outputPath = CommandLine.arguments[argIndex + 1]
@@ -753,7 +1093,9 @@ while argIndex < CommandLine.arguments.count {
           -t, --text TEXT     Specify the text to measure (default: "Hello World")
           -l, --list-fonts    List all available fonts on the system
           -p, --pdf           Generate a PDF visualization
-          -o, --output PATH   Specify the output PDF path (default: ./fontname_size.pdf)
+          --png              Generate a PNG visualization
+          --scale SCALE      Scale factor for PNG output (default: 2.0, higher is better quality)
+          -o, --output PATH   Specify the output path (default: ./fontname_size.{pdf|png})
           -h, --help          Show this help message
         
         Note: When --font-url is provided, the font name will be extracted from the font file,
@@ -802,8 +1144,9 @@ if !handler.isFontRegistered() {
 handler.extremeGlyphs = findExtremeGlyphs(fontName: fontName, fontSize: fontSize, fontURL: fontURL, chars: text)
 
 // Generate output path if not specified
-if generatePDF && outputPath.isEmpty {
-    outputPath = "\(FileManager.default.currentDirectoryPath)/\(handler.fontName.replacingOccurrences(of: " ", with: "_"))_\(fontSize)pt_tracking\(tracking)pt.pdf"
+if outputPath.isEmpty {
+    let fileExtension = generatePNG ? "png" : "pdf"
+    outputPath = "\(FileManager.default.currentDirectoryPath)/\(handler.fontName.replacingOccurrences(of: " ", with: "_"))_\(fontSize)pt_tracking\(tracking)pt.\(fileExtension)"
 }
 
 // Get the bounds using both methods
@@ -831,11 +1174,17 @@ print("Cap Height: \(metrics["capHeight"] ?? 0) points")
 print("x-Height: \(metrics["xHeight"] ?? 0) points")
 print("Line Height: \(metrics["lineHeight"] ?? 0) points")
 
-// Generate PDF if requested
+// Generate visualization if requested
 if generatePDF {
     let success = handler.createPDFVisualization(outputPath: outputPath)
     
     if success {
         print("\nPDF visualization created at: \(outputPath)")
     }
-} 
+} else if generatePNG {
+    let success = handler.createPNGVisualization(outputPath: outputPath, scale: pngScale)
+    
+    if success {
+        print("\nPNG visualization created at: \(outputPath)")
+    }
+}

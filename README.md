@@ -1,6 +1,6 @@
 # ScriptFont Viewer
 
-A Swift-based tool for visualizing font metrics and bounds. This tool creates detailed PDF visualizations of font characteristics including precise glyph bounds, standard bounds, and various font metrics.
+A Swift-based tool for visualizing font metrics and bounds. This tool creates detailed PDF and PNG visualizations of font characteristics including precise glyph bounds, standard bounds, and various font metrics.
 
 ![preview](/preview.png)
 
@@ -20,7 +20,7 @@ $${\color{red}You \space are \space requires \space a \space license \space for 
 ## Tools
 
 ### ScriptFontViewer.swift
-Visualizes font metrics and bounds by generating detailed PDF files. The visualization includes information about characters that extend furthest above and below the baseline.
+Visualizes font metrics and bounds by generating detailed PDF or PNG files. The visualization includes information about characters that extend furthest above and below the baseline.
 
 ### findExtremeGlyphs.swift
 Standalone tool to analyze fonts and find characters that extend furthest above and below the baseline.
@@ -77,9 +77,11 @@ Options:
   -k, --tracking VAL  Specify the tracking value in points (default: 0.0)
   -t, --text TEXT     Specify the text to measure (default: "Hello World")
   -l, --list-fonts    List all available fonts on the system
-  -p, --pdf          Generate a PDF visualization
-  -o, --output PATH   Specify the output PDF path (default: ./fontname_sizept_trackingNpt.pdf)
-  -h, --help         Show this help message
+  -p, --pdf           Generate a PDF visualization
+  --png              Generate a PNG visualization
+  --scale SCALE      Scale factor for PNG output (default: 2.0, higher is better quality)
+  -o, --output PATH   Specify the output path (default: ./fontname_sizept_trackingNpt.{pdf|png})
+  -h, --help          Show this help message
 
 Note: When --font-url is provided, the font name will be extracted from the font file,
       and any provided font name will be ignored.
@@ -131,8 +133,14 @@ swift ScriptFontViewer.swift -f "MadinaScript" -s 24.0 -t "Hello World" -p
 # Custom size and tracking
 ./ScriptFontViewer.swift -f "Zapfino" -s 36 -k 2.0 -t "Spaced Out" -p
 
-# Custom output path
+# Custom output path (PDF)
 ./ScriptFontViewer.swift -f "Zapfino" -t "Hello" -p -o "my_font.pdf"
+
+# Generate PNG output
+./ScriptFontViewer.swift -f "Zapfino" -t "Hello" --png
+
+# High-quality PNG with custom scale factor
+./ScriptFontViewer.swift -f "Zapfino" -t "Hello" --png --scale 4.0
 
 # Complete character set with custom tracking
 # Generates: MadinaScript_32pt_tracking2pt.pdf
@@ -164,14 +172,14 @@ swift ScriptFontViewer.swift -u "https://cdn.freeprintsapp.com/fonts/SebastianBo
 
 ## Output
 
-The tool generates a PDF file containing:
+The tool generates a PDF or PNG file containing:
 1. The rendered text using the specified font and settings
 2. Visual indicators for all font metrics
 3. Bounding boxes showing both standard and precise glyph bounds
 4. Detailed measurements and metrics information
 5. Information about characters that extend furthest above and below the baseline
 
-The PDF filename is automatically generated based on the font name, size, and tracking values unless an output path is specified with `-o`.
+The output filename is automatically generated based on the font name, size, and tracking values unless an output path is specified with `-o`. The file extension (.pdf or .png) is determined by the chosen output format.
 
 ## Notes
 
@@ -213,12 +221,26 @@ The tool measures and displays:
 - Precise glyph bounds using CTLineGetBoundsWithOptions
 - Font metrics using CT* functions (CTFontGetAscent, etc.)
 
-### PDF Generation
+### Output Generation
 - Light gray background (0.95)
 - Metric lines in gray (0.7)
 - Bounds rectangles with semi-transparent fill
 - 8pt Helvetica for labels
 - Origin point marked in red
+
+#### PDF-specific
+- Vector graphics for infinite resolution
+- Compact file size
+- Perfect for print and high-quality reproduction
+
+#### PNG-specific
+- Raster graphics with configurable scale factor
+- Scale factor determines output quality:
+  - 1.0: Standard resolution (1x)
+  - 2.0: Retina display quality (2x, default)
+  - 4.0: Ultra-high quality for zooming or large displays
+- Larger scale factors produce sharper text and lines but increase file size
+- Ideal for web use, presentations, and documentation
 
 ## Requirements
 
@@ -405,6 +427,33 @@ Char: '!' - Above baseline: 40.27, Below baseline: 1.28
 Extreme glyphs:
 Top-most glyph: 'H' extends 44.3125 points above baseline
 Bottom-most glyph: 'g' extends 27.734375 points below baseline
+```
+
+### Compare with Swift Rendering
+```
+➜  ScriptFontViewer git:(main) ✗  ./ScriptFontViewer.swift --font "adelia" --size 36 --text 'Hello, good luck!' --png --scale 4.0
+
+Text: "Hello, good luck!"
+Font: adelia at 36.0pt
+Tracking: 0.0 points
+
+Standard bounds (using CTFramesetterCreateFrame):
+Width: 344.84399999999994 points, Height: 36.000072956085205 points
+
+Precise glyph bounds (accounting for overhangs):
+Origin X: -2.052, Origin Y: -28.583999999999996
+Width: 343.33200000000005 points, Height: 74.412 points
+
+Font metrics:
+Ascent: 27.0000547170639 points
+Descent: 9.000018239021301 points
+Leading: 0.0 points
+Cap Height: 45.467999999999996 points
+x-Height: 16.235999999999997 points
+Line Height: 36.000072956085205 points
+PNG created successfully at: /Users/xxx/Downloads/ScriptFontViewer/adelia_36.0pt_tracking0.0pt.png
+
+PNG visualization created at: /Users/xxx/Downloads/ScriptFontViewer/adelia_36.0pt_tracking0.0pt.png
 ```
 
 ### Implementation Notes

@@ -309,7 +309,7 @@ node index.js --font ./fonts/MyScript.ttf --size 48 --text "Sample Text"
 node index.js --font ./fonts/MyScript.ttf --size 32 --text "Spaced Out" --tracking 2 --output preview.pdf
 ```
 
-### Examples usually used
+### Practical Examples
 ```
 node index.js --font ./fonts/SofiaProSoft-Regular.ttf --size 32 --text "Spaced Out" --tracking 2 --output preview-magic.pdf
 
@@ -378,7 +378,7 @@ php font_metrics.php -f fonts/adelia.ttf -c "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 php font_metrics.php -f fonts/SofiaProSoft-Regular.ttf -s 48 -t "Beautiful Writing"
 ```
 
-### Usually Samples
+### Practical Examples
 ```
 ➜  ScriptFontViewer git:(main) ✗ php font_metrics.php -f fonts/adelia.ttf -s 36 -t 'Hello, good luck!'                  
 

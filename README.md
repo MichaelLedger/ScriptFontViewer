@@ -306,12 +306,18 @@ node index.js --font ./fonts/SofiaProSoft-Regular.ttf --size 32 --text "Spaced O
 A PHP version of the font metrics analyzer is also available, providing similar functionality using the ImageMagick extension.
 
 ### Prerequisites
+
+On mac M2 I installed it via brew on top of my php install.
+As described here: [Install PHP's Imagick Extension on macOS](https://matthewsetter.com/install-php-imagick-extension-macos/)
+
 - PHP 7.4+ installed
 - ImageMagick PHP extension installed
   - Mac: 
     ```bash
+    brew install php
     brew install imagemagick
-    pecl install imagick
+    brew install pkg-config
+    sudo pecl install imagick
     ```
   - Linux:
     ```bash

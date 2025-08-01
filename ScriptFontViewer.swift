@@ -321,7 +321,7 @@ class FontMetricsHandler {
     func createPDFVisualization(outputPath: String) -> Bool {
         // Check if font is registered
         guard isFontRegistered() else {
-            print("Error: Font '\(fontName)' is not registered in the system")
+            print("Error: Font '\(fontName)' is not registered in the system, please install font to system's font book first then use family name in identifiers or provide a font URL with --font-url.")
             return false
         }
         
@@ -792,7 +792,7 @@ if !handler.isFontRegistered() {
             exit(1)
         }
     } else {
-        print("Error: Font '\(fontName)' is not registered in the system")
+        print("Error: Font '\(fontName)' is not registered in the system, please install font to system's font book first then use family name in identifiers or provide a font URL with --font-url.")
         print("Use --list-fonts (-l) to see available fonts or provide a font URL with --font-url")
         exit(1)
     }

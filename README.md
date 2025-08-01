@@ -301,6 +301,128 @@ node index.js --font ./fonts/SofiaProSoft-Regular.ttf --size 32 --text "Spaced O
 - Cross-platform compatible
 - Provides similar metrics visualization to the Swift version
  
+## PHP Implementation by ImageMagick
+
+A PHP version of the font metrics analyzer is also available, providing similar functionality using the ImageMagick extension.
+
+### Prerequisites
+- PHP 7.4+ installed
+- ImageMagick PHP extension installed
+  - Mac: 
+    ```bash
+    brew install imagemagick
+    pecl install imagick
+    ```
+  - Linux:
+    ```bash
+    sudo apt-get install php-imagick
+    ```
+  - Windows: Follow the [ImageMagick PHP installation guide](https://mlocati.github.io/articles/php-windows-imagick.html)
+
+### Features
+- Font metrics analysis (ascender, descender, width, height)
+- Extreme glyph detection (highest/lowest characters)
+- Visual metrics representation
+- PNG output with metric lines
+- Command-line interface
+
+### Usage
+```bash
+php font_metrics.php [options]
+
+Options:
+  -f, --font FONT_PATH   Path to the font file (required)
+  -s, --size SIZE        Font size in points (default: 24)
+  -t, --text TEXT        Text to analyze
+  -c, --chars CHARS      Custom character set for extreme glyph analysis
+  -h, --help            Show this help message
+```
+
+### Examples
+```bash
+# Basic font metrics analysis
+php font_metrics.php -f fonts/adelia.ttf -s 36 -t "Hello World"
+
+# Find extreme glyphs in a custom character set
+php font_metrics.php -f fonts/adelia.ttf -c "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+# Analyze specific text with custom size
+php font_metrics.php -f fonts/SofiaProSoft-Regular.ttf -s 48 -t "Beautiful Writing"
+```
+
+### Usually Samples
+```
+➜  ScriptFontViewer git:(main) ✗ php font_metrics.php -f fonts/adelia.ttf -s 36 -t 'Hello, good luck!'                  
+
+Metrics for text: "Hello, good luck!"
+Font: adelia.ttf at 36pt
+Width: 353 points
+Height: 36 points
+Ascender: 27 points
+Descender: 9 points
+
+Font Metrics Details:
+--------------------
+characterWidth      : 36.00
+characterHeight     : 36.00
+ascender            : 27.00
+descender           : -9.00
+textWidth           : 353.00
+textHeight          : 36.00
+maxHorizontalAdvance: 154.00
+boundingBox         : x1=-5.69, y1=-27.73, x2=46.44, y2=44.31
+originX             : 353.00
+originY             : 0.00
+--------------------
+DrawImage: width(353), height:(73))
+Visualization saved to: imagick_text_metrics.png
+--------------------
+Char: 'H' - Above baseline: 44.31, Below baseline: 21.19
+Char: 'e' - Above baseline: 16.30, Below baseline: 0.14
+Char: 'l' - Above baseline: 38.42, Below baseline: 11.23
+Char: 'l' - Above baseline: 38.42, Below baseline: 11.23
+Char: 'o' - Above baseline: 14.48, Below baseline: 0.14
+Char: ',' - Above baseline: 6.05, Below baseline: 0.83
+Char: ' ' - Above baseline: 0.28, Below baseline: 0.14
+Char: 'g' - Above baseline: 16.50, Below baseline: 27.73
+Char: 'o' - Above baseline: 14.48, Below baseline: 0.14
+Char: 'o' - Above baseline: 14.48, Below baseline: 0.14
+Char: 'd' - Above baseline: 39.88, Below baseline: 18.28
+Char: ' ' - Above baseline: 0.28, Below baseline: 0.14
+Char: 'l' - Above baseline: 38.42, Below baseline: 11.23
+Char: 'u' - Above baseline: 15.50, Below baseline: 0.14
+Char: 'c' - Above baseline: 17.00, Below baseline: 0.14
+Char: 'k' - Above baseline: 38.06, Below baseline: 18.97
+Char: '!' - Above baseline: 40.27, Below baseline: 1.28
+--------------------
+
+Extreme glyphs:
+Top-most glyph: 'H' extends 44.3125 points above baseline
+Bottom-most glyph: 'g' extends 27.734375 points below baseline
+```
+
+### Implementation Notes
+- Uses ImageMagick's font metrics capabilities
+- Provides visual representation with metric lines
+- Supports TTF/OTF fonts
+- Outputs PNG format for visualizations
+- Cross-platform compatible
+
+### [boundingBox](https://www.php.net/manual/en/imagick.queryfontmetrics.php)
+- This returns an associative array describing the four points (x1, y1, x2, y2) of a rectangle that contain the character. These values are relative to the origin (i.e. the coordinates of where you are drawing the character within an image). **The returned rectangle is very accurate and encloses all parts of the printed character completely - but the boundingBox only works on single characters.** It will not give accurate figures for multiple characters (in my experience anyway). When drawing a box you need to ADD "x" values to the origin and SUBTRACT "y" values from the origin. You cannot rely on the boundingBox for the SPACE character. It returns a boundingBox of (0,0,0,0).  textWidth (see above) comes in handy here.
+
+### PHP Warning:  Module "imagick" is already loaded in Unknown on line 0
+```
+grep -i "imagick" /opt/homebrew/etc/php/8.4/php.ini
+extension="imagick.so"
+extension=imagick.so
+```
+I found the issue! The Imagick extension is being loaded twice in the php.ini file.
+
+Let's fix this by removing one of the duplicate entries:
+
+`sudo sed -i '' '/^extension="imagick.so"$/d' /opt/homebrew/etc/php/8.4/php.ini`
+
 ### Reference
 [imagemagick - text](https://imagemagick.org/Usage/text/)
 [imagemagick - command-line-options](https://imagemagick.org/script/command-line-options.php?#font)
